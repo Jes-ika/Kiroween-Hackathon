@@ -8,7 +8,7 @@ export const GW1 = {
   preamble: 0x55,
   preambleCount: 6,
   sync: 0x7e,
-  maxPayload: 96, // bytes; a JSON envelope with a ~55-char message fits
+  maxPayload: 96, // bytes; JSON envelope overhead is ~56B, leaving ~36 chars of text
 };
 
 // CRC-16/CCITT-FALSE (poly 0x1021, init 0xFFFF).

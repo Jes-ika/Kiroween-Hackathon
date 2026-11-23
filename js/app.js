@@ -187,17 +187,25 @@ requestAnimationFrame(drawScope);
 
 // ---- self-test (pure DSP round trip, no audio device needed) ---------------
 function runSelfTest() {
-  const phrase = `self-test ${Math.random().toString(36).slice(2, 10).toUpperCase()} — the wire is haunted but honest`;
-  const payload = textToPayload(envelope(state.me, 'ALL', 2, phrase, Math.floor(Date.now() / 1000)));
-  const t0 = performance.now();
-  const samples = encodePackets([payload], {}, 48000);
-  const frames = decodeBurst(samples, {}, 48000);
-  const ms = (performance.now() - t0).toFixed(0);
-  const ok = frames.length === 1 && fnv1a(frames[0]) === fnv1a(payload);
-  addLog(ok ? 'test' : 'warn',
-    ok ? `SELF-TEST PASSED in ${ms} ms — ${samples.length} samples of pure math carried your words intact.`
-       : 'SELF-TEST FAILED — the wire ate your words.');
-  return ok;
+  try {
+    // JSON envelope overhead is ~56 bytes; keep the phrase inside the 96B wire
+    // budget (ASCII only — multibyte punctuation is a byte-budget assassin).
+    const hex = Math.random().toString(36).slice(2, 8).toUpperCase();
+    const phrase = `self-test ${hex}: haunted but honest`;
+    const payload = textToPayload(envelope(state.me, 'ALL', 2, phrase, Math.floor(Date.now() / 1000)));
+    const t0 = performance.now();
+    const samples = encodePackets([payload], {}, 48000);
+    const frames = decodeBurst(samples, {}, 48000);
+    const ms = (performance.now() - t0).toFixed(0);
+    const ok = frames.length === 1 && fnv1a(frames[0]) === fnv1a(payload);
+    addLog(ok ? 'test' : 'warn',
+      ok ? `SELF-TEST PASSED in ${ms} ms — ${samples.length} samples of pure math carried your words intact.`
+         : 'SELF-TEST FAILED — the wire ate your words.');
+    return ok;
+  } catch (err) {
+    addLog('warn', `SELF-TEST ERROR: ${err.message}`);
+    return false;
+  }
 }
 
 // ---- guided séance: a judge's 30-second tour --------------------------------

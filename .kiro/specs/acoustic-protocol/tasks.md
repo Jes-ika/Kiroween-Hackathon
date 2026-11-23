@@ -13,8 +13,10 @@
 - [x] 8. Streaming Decoder: burst segmentation on 50 ms silence
 - [x] 9. PBT: noise to 10 dB SNR; 48k↔44.1k mismatch; ×3 flood; corruption
       rejection; silence honesty; baud sweep
-- [x] 10. Browser transport: GhostAudio (speakers gate, séance MediaStream
-      loop, mic via getUserMedia with EC/NS/AGC off)
+- [x] 10. Browser transport: GhostAudio (speakers gate, séance in-graph tap,
+      mic via getUserMedia with EC/NS/AGC off). LESSON: the first séance
+      loop used a MediaStreamDestination roundtrip and delivered silence on
+      real machines — replaced with a direct master→processor connection.
 - [x] 11. Self-test ritual: encode→decode without audio hardware
 - [x] 16. LIVE WIRE oscilloscope: AnalyserNode tap on master, canvas render
       of the actual FSK waveform (judges see the modem thinking)

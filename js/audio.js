@@ -30,7 +30,7 @@ export class GhostAudio {
     this.ctx = new (window.AudioContext || window.webkitAudioContext)();
     this.sr = this.ctx.sampleRate;
 
-    // master -> [speakers gate -> destination] and -> [séance loop stream]
+    // master -> [speakers gate -> destination] and (when séance is on) -> [decoder tap]
     this.master = this.ctx.createGain();
     this.master.gain.value = 1;
     // analyser tap: feeds the LIVE WIRE oscilloscope (pure observation, no routing)
@@ -41,9 +41,6 @@ export class GhostAudio {
     this.outGain.gain.value = this.speakersOn ? 1 : 0;
     this.master.connect(this.outGain);
     this.outGain.connect(this.ctx.destination);
-
-    this.loopDest = this.ctx.createMediaStreamDestination();
-    this.master.connect(this.loopDest);
 
     // decode path: both the séance loop and the mic sum into one processor
     this.proc = this.ctx.createScriptProcessor(4096, 1, 1);
@@ -74,13 +71,20 @@ export class GhostAudio {
     this.seanceOn = on;
     if (!this.ctx) return;
     try {
-      this.loopSrc.disconnect();
+      this.seanceTap.disconnect();
     } catch {
       /* first call: nothing connected yet */
     }
+    this.seanceTap = null;
     if (on) {
-      this.loopSrc = this.ctx.createMediaStreamSource(this.loopDest.stream);
-      this.loopSrc.connect(this.proc);
+      // Direct in-graph tap: the decoder hears exactly what the speakers get.
+      // v0.1 routed this through a MediaStreamDestination roundtrip, which is
+      // browser-quirk-prone (silence on some machines). A plain node
+      // connection is the boring, reliable path.
+      this.seanceTap = this.ctx.createGain();
+      this.seanceTap.gain.value = 1;
+      this.master.connect(this.seanceTap);
+      this.seanceTap.connect(this.proc);
     }
   }
 

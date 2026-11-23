@@ -1,0 +1,11 @@
+{
+  "name": "ghostwire",
+  "version": "0.1.0",
+  "description": "The séance protocol for dead zones — resurrect the 1962 acoustic modem in any browser. Network-free text messaging when cell towers die.",
+  "type": "module",
+  "license": "MIT",
+  "scripts": {
+    "test": "node --test tests/",
+    "start": "npx --yes serve -l 5173 ."
+  }
+}

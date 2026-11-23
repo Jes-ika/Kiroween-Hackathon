@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>GHOSTWIRE — séance protocol for dead zones</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<div id="overlay">
+  <pre class="ghost-art">
+     .-.
+    (o o)  boo, says the modem.
+    | O \\
+     \\_/  1962 died so this could live.
+  </pre>
+  <h1>GHOSTWIRE</h1>
+  <p class="tagline">the séance protocol for dead zones</p>
+  <p class="blurb">When the towers fall, your voice still travels — as sound.
+  Text rides 1200&nbsp;Hz and 2200&nbsp;Hz tones from speaker to speaker,
+  device to device, exactly like a 1962 Bell modem. No network. No servers.
+  No permission asked.</p>
+  <button id="start-btn">BEGIN THE SÉANCE</button>
+  <p class="hint">uses your speakers (and mic, if you open one). nothing leaves the room.</p>
+</div>
+
+<div class="crt hidden" id="crt">
+  <header>
+    <div class="brand">
+      <h1>GHOSTWIRE</h1>
+      <p class="sub">séance protocol for dead zones — GW-1 · 600 baud · the Bell-202 ghost</p>
+    </div>
+    <div id="status-lamp" class="lamp idle" title="idle"></div>
+  </header>
+
+  <main>
+    <section id="log" aria-live="polite"></section>
+
+    <aside>
+      <div class="panel">
+        <label>YOUR SPIRIT NAME</label>
+        <div class="row">
+          <select id="callsign"></select>
+          <button id="reroll" title="reroll">reroll</button>
+        </div>
+      </div>
+
+      <div class="panel">
+        <label>WHISPER INTO THE VOID</label>
+        <textarea id="msg" maxlength="60" rows="3" placeholder="i am safe. the towers are down."></textarea>
+        <div class="row">
+          <select id="target"></select>
+          <button id="send" class="primary">SEND</button>
+        </div>
+      </div>
+
+      <div class="panel">
+        <label>SOS — BROADCAST ×3</label>
+        <div class="sos-grid">
+          <button data-sos="I AM SAFE" class="safe">I AM SAFE</button>
+          <button data-sos="NEED MEDICAL" class="danger">NEED MEDICAL</button>
+          <button data-sos="NEED WATER" class="danger">NEED WATER</button>
+          <button data-sos="COME TO ME" class="danger">COME TO ME</button>
+        </div>
+      </div>
+
+      <div class="panel">
+        <label>DEVICES</label>
+        <div class="toggles">
+          <label class="toggle"><input type="checkbox" id="spk" checked><span>speak out loud</span></label>
+          <label class="toggle"><input type="checkbox" id="loop" checked><span>séance loop (in-page)</span></label>
+          <label class="toggle"><input type="checkbox" id="mic"><span>open the mic (real air)</span></label>
+        </div>
+        <label class="meter-label">CARRIER</label>
+        <div class="meter"><div id="meter-fill"></div></div>
+      </div>
+
+      <div class="panel">
+        <label>RITUALS</label>
+        <button id="selftest" class="wide">RUN SELF-TEST</button>
+        <div id="stats" class="stats"></div>
+      </div>
+    </aside>
+  </main>
+
+  <footer>GW-1 · mark 1200 Hz · space 2200 Hz · 600 baud · CRC-16 · zero servers · MIT</footer>
+</div>
+
+<script type="module" src="js/app.js"></script>
+</body>
+</html>

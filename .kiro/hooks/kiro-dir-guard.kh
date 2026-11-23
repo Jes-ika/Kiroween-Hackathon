@@ -1,0 +1,16 @@
+{
+  "enabled": true,
+  "name": "kiro-dir-guard",
+  "version": "1",
+  "trigger": {
+    "type": "fileEdited",
+    "filePatterns": [".gitignore"]
+  },
+  "actions": [
+    {
+      "type": "agent",
+      "prompt": "Kiroween rules require /.kiro (specs, hooks, steering) present and NOT gitignored — ignoring it can disqualify the submission. Inspect .gitignore in the repo root. If it contains any pattern that matches .kiro, its subfolders, or ignores it transitively (e.g. a broad '.*' pattern), propose the minimal fix and explain why. Otherwise confirm the guard holds.",
+      "description": "Submission insurance: a stray .gitignore pattern could silently disqualify the project. This hook audits the file whenever it changes."
+    }
+  ]
+}

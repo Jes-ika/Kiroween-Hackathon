@@ -1,0 +1,9 @@
+# dependencies are deliberately absent at runtime — keep it that way if possible
+node_modules/
+*.log
+.DS_Store
+Thumbs.db
+
+# NOTE: /.kiro is intentionally NOT ignored.
+# Kiroween rules require specs, hooks and steering to be visible in the repo —
+# ignoring it can disqualify the submission. The kiro-dir-guard hook audits this file.

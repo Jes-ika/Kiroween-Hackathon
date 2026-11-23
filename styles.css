@@ -1,0 +1,238 @@
+/* GHOSTWIRE — haunted CRT terminal.
+   Green phosphor on dying glass. Scanlines, flicker, glow. Tasteful, fast,
+   CSS-only: no images, no fonts to load, no JS in the render path. */
+
+:root {
+  --phos: #86ffb9;
+  --phos-dim: #3d8f66;
+  --phos-hot: #d6ffe8;
+  --blood: #ff6b6b;
+  --amber: #ffc86b;
+  --bg: #050b07;
+  --panel: #081510;
+  --edge: #1d4030;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  height: 100%;
+  background: var(--bg);
+  color: var(--phos);
+  font-family: "Cascadia Mono", "Consolas", "Menlo", monospace;
+  font-size: 14px;
+}
+
+/* ---- CRT dressing: scanlines + vignette + flicker ------------------------ */
+.crt, #overlay { position: relative; height: 100%; }
+.crt::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background: repeating-linear-gradient(
+    to bottom,
+    rgba(0, 0, 0, 0) 0px,
+    rgba(0, 0, 0, 0) 2px,
+    rgba(0, 20, 10, 0.28) 3px
+  );
+  mix-blend-mode: multiply;
+  z-index: 50;
+}
+.crt::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(ellipse at center, rgba(0,0,0,0) 55%, rgba(0, 0, 0, 0.55) 100%);
+  z-index: 51;
+}
+body { animation: flicker 7s infinite; }
+@keyframes flicker {
+  0%, 100% { opacity: 1; }
+  92% { opacity: 1; }
+  93% { opacity: 0.86; }
+  94% { opacity: 1; }
+  96% { opacity: 0.92; }
+  97% { opacity: 1; }
+}
+
+.hidden { display: none !important; }
+
+/* ---- overlay / boot screen ---------------------------------------------- */
+#overlay {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  text-align: center;
+  padding: 24px;
+}
+.ghost-art {
+  color: var(--phos-dim);
+  text-shadow: 0 0 8px rgba(134, 255, 185, 0.4);
+  margin: 0;
+  line-height: 1.2;
+}
+#overlay h1 {
+  font-size: 42px;
+  letter-spacing: 10px;
+  margin: 0;
+  color: var(--phos-hot);
+  text-shadow: 0 0 18px rgba(134, 255, 185, 0.75), 0 0 60px rgba(134, 255, 185, 0.35);
+}
+.tagline { color: var(--phos-dim); letter-spacing: 4px; margin: 0; }
+.blurb { max-width: 560px; line-height: 1.6; color: var(--phos); }
+.hint { color: var(--phos-dim); font-size: 12px; }
+
+/* ---- buttons ------------------------------------------------------------- */
+button {
+  background: transparent;
+  border: 1px solid var(--edge);
+  color: var(--phos);
+  font: inherit;
+  padding: 8px 14px;
+  cursor: pointer;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+}
+button:hover { border-color: var(--phos); box-shadow: 0 0 12px rgba(134, 255, 185, 0.25); }
+button:active { transform: translateY(1px); }
+button.primary { border-color: var(--phos); color: var(--phos-hot); }
+#start-btn {
+  font-size: 18px;
+  padding: 14px 30px;
+  border-color: var(--phos);
+  color: var(--phos-hot);
+  animation: breathe 3s infinite;
+}
+@keyframes breathe {
+  0%, 100% { box-shadow: 0 0 6px rgba(134, 255, 185, 0.15); }
+  50% { box-shadow: 0 0 22px rgba(134, 255, 185, 0.45); }
+}
+
+/* ---- console layout ------------------------------------------------------ */
+.crt { display: flex; flex-direction: column; }
+header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 20px;
+  border-bottom: 1px dashed var(--edge);
+}
+header h1 { margin: 0; font-size: 22px; letter-spacing: 8px; color: var(--phos-hot);
+  text-shadow: 0 0 12px rgba(134, 255, 185, 0.6); }
+header .sub { margin: 4px 0 0; color: var(--phos-dim); font-size: 12px; letter-spacing: 1px; }
+
+.lamp { width: 14px; height: 14px; border-radius: 50%; border: 1px solid var(--edge); }
+.lamp.idle { background: #10241a; animation: breathe 4s infinite; }
+.lamp.tx { background: var(--amber); box-shadow: 0 0 16px var(--amber); }
+.lamp.rx { background: var(--phos); box-shadow: 0 0 16px var(--phos); }
+
+main {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 1fr 330px;
+  gap: 16px;
+  padding: 16px 20px;
+  min-height: 0;
+}
+@media (max-width: 860px) { main { grid-template-columns: 1fr; } }
+
+/* ---- the log (a séance transcript) --------------------------------------- */
+#log {
+  background: var(--panel);
+  border: 1px solid var(--edge);
+  overflow-y: auto;
+  padding: 14px;
+  line-height: 1.55;
+  min-height: 0;
+}
+#log .line { margin-bottom: 6px; animation: materialize 0.35s ease-out; }
+@keyframes materialize {
+  from { opacity: 0; filter: blur(2px); transform: translateY(3px); }
+  to { opacity: 1; filter: blur(0); transform: none; }
+}
+#log .t { color: var(--phos-dim); margin-right: 8px; font-size: 12px; }
+#log .sys { color: var(--phos-dim); }
+#log .sent { color: var(--phos); }
+#log .heard { color: var(--phos-hot); text-shadow: 0 0 10px rgba(214, 255, 232, 0.5); }
+#log .relay { color: var(--amber); }
+#log .warn { color: var(--blood); }
+#log .sos {
+  color: var(--blood);
+  text-shadow: 0 0 12px rgba(255, 107, 107, 0.7);
+  animation: pulse 1.2s ease-in-out 3;
+  border-left: 3px solid var(--blood);
+  padding-left: 8px;
+}
+@keyframes pulse { 50% { opacity: 0.55; } }
+
+/* ---- side panels ---------------------------------------------------------- */
+aside { display: flex; flex-direction: column; gap: 12px; overflow-y: auto; min-height: 0; }
+.panel {
+  background: var(--panel);
+  border: 1px dashed var(--edge);
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.panel label { color: var(--phos-dim); font-size: 11px; letter-spacing: 3px; }
+.row { display: flex; gap: 8px; }
+.row select { flex: 1; }
+select, textarea {
+  background: #04100a;
+  border: 1px solid var(--edge);
+  color: var(--phos);
+  font: inherit;
+  padding: 8px;
+  width: 100%;
+}
+textarea { resize: vertical; }
+textarea:focus, select:focus, button:focus-visible {
+  outline: none;
+  border-color: var(--phos);
+  box-shadow: 0 0 10px rgba(134, 255, 185, 0.2);
+}
+
+.sos-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.sos-grid .danger { border-color: #5c2626; color: var(--blood); }
+.sos-grid .danger:hover { border-color: var(--blood); box-shadow: 0 0 14px rgba(255, 107, 107, 0.35); }
+.sos-grid .safe { border-color: var(--edge); color: var(--phos-hot); }
+
+.toggles { display: flex; flex-direction: column; gap: 6px; }
+.toggle { display: flex; gap: 8px; align-items: center; color: var(--phos); letter-spacing: 1px; font-size: 12px; }
+.toggle input { accent-color: var(--phos); }
+
+.meter-label { margin-top: 6px; }
+.meter {
+  height: 10px;
+  border: 1px solid var(--edge);
+  background: #04100a;
+}
+#meter-fill {
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, var(--phos-dim), var(--phos));
+  box-shadow: 0 0 10px rgba(134, 255, 185, 0.5);
+  transition: width 0.08s linear;
+}
+
+button.wide { width: 100%; }
+.stats { color: var(--phos-dim); font-size: 12px; letter-spacing: 1px; }
+
+footer {
+  border-top: 1px dashed var(--edge);
+  padding: 10px 20px;
+  color: var(--phos-dim);
+  font-size: 11px;
+  letter-spacing: 2px;
+}
+
+/* thin ghostly scrollbars */
+::-webkit-scrollbar { width: 8px; }
+::-webkit-scrollbar-thumb { background: var(--edge); }
+::-webkit-scrollbar-track { background: transparent; }

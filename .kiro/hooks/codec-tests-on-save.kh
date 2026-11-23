@@ -1,0 +1,16 @@
+{
+  "enabled": true,
+  "name": "codec-tests-on-save",
+  "version": "1",
+  "trigger": {
+    "type": "fileEdited",
+    "filePatterns": ["js/codec.js", "js/protocol.js", "tests/*.test.js"]
+  },
+  "actions": [
+    {
+      "type": "task",
+      "command": "node --test \"tests/*.test.js\"",
+      "description": "Property-based tests are the modem's conscience: any edit to signal math or framing re-runs all 14 properties (round-trip, noise, clock mismatch, corruption rejection). A red test blocks the workflow."
+    }
+  ]
+}

@@ -81,7 +81,7 @@ document.getElementById('go').onclick = async () => {
   const aligned = merged.slice(align.off0 - 1600, align.off0 + samples.length + 1600);
   const alignedFrames = decodeBurst(aligned, {}, sr);
   out('   decodeBurst(exact-aligned slice) frames =', alignedFrames.length);
-  // first divergent sample
+  // first divergent sample + glitch forensics
   let firstDiff = -1;
   for (let i = 0; i < samples.length; i++) {
     const idx = align.off0 + i;
@@ -91,6 +91,25 @@ document.getElementById('go').onclick = async () => {
     if (Math.abs(a - b) > 0.05) { firstDiff = i; break; }
   }
   out('   first big sample diff at burst sample =', firstDiff, '(burst is', samples.length, 'samples)');
+  if (firstDiff >= 0) {
+    const idx = align.off0 + firstDiff;
+    out('   around the seam, merged:', [idx - 2, idx - 1, idx, idx + 1, idx + 2].map((j) => merged[j].toFixed(3)).join(' '));
+    out('   expected (scaled original):', [idx - 2, idx - 1, idx, idx + 1, idx + 2].map((j) => (align.scale * samples[j - align.off0]).toFixed(3)).join(' '));
+    // classify: does the capture RESUME matching at a constant shift?
+    let bestShift = null, bestErr = Infinity;
+    for (let shift = -96; shift <= 96; shift++) {
+      let err = 0, cnt = 0;
+      for (let j = 0; j < 2000; j += 2) {
+        const a = merged[idx + shift + j];
+        const b = align.scale * samples[firstDiff + j];
+        if (a === undefined) { err = Infinity; break; }
+        err += Math.abs(a - b);
+        cnt++;
+      }
+      if (err < bestErr) { bestErr = err; bestShift = shift; }
+    }
+    out('   best resume shift =', bestShift, 'samples (avg err', (bestErr / 1000).toFixed(4) + ')');
+  }
 };
 
 function findOffset(merged, samples) {

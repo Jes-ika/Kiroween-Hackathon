@@ -34,12 +34,19 @@ the design doc first.
 - What PBT caught that unit tests wouldn't: the median-based clock estimate
   failed ONLY on long frames (3-packet bursts, 300-baud) because tenths of a
   sample per bit compound over hundreds of bits. No human writes that unit
-  case by hand; the property "arbitrary payload round-trips" found it in
+  case by hand; the property "arbitrary payload round-trip" found it in
   seconds.
 - A second lesson: our first corruption test was too gentle (24 flipped
   samples averaged away by the Goertzel windows — the message legitimately
   survived). We replaced it with a realistic 60 ms noise blast. PBT taught us
   what corruption actually means to a modem.
+- A third lesson (browser-only, invisible to Node): ScriptProcessorNode
+  reuses its inputBuffer memory between callbacks — our Decoder stored the
+  views and decoded overwritten silence. Diagnosed with a localhost
+  pipeline-introspection page (`debug.html`), fixed with per-chunk
+  snapshots, and locked in with a new PBT ("bursts embedded in a realtime
+  capture layout decode"). Realtime paths need their own regression
+  properties, not just synthetic ones.
 
 ## Agent hooks
 

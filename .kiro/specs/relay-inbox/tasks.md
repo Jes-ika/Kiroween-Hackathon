@@ -8,3 +8,5 @@
 - [x] 6. Stats line (sent / heard / echoes / carried)
 - [ ] 7. 3-device chain demo (A → B relays → C) for the demo video
 - [ ] 8. Per-callsign inbox grouping when transcript grows long
+- [x] 9. Guided séance: 30-second narrated auto-demo (self-test → SOS ×3 →
+      narration) so a judge who clones and runs sees value immediately

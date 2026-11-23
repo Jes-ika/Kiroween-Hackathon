@@ -16,8 +16,13 @@
 - [x] 10. Browser transport: GhostAudio (speakers gate, séance MediaStream
       loop, mic via getUserMedia with EC/NS/AGC off)
 - [x] 11. Self-test ritual: encode→decode without audio hardware
+- [x] 16. LIVE WIRE oscilloscope: AnalyserNode tap on master, canvas render
+      of the actual FSK waveform (judges see the modem thinking)
+- [x] 17. Secure-context guard: mic checkbox locks with explanation when
+      getUserMedia is unavailable (LAN http) — silent failure eliminated
+- [x] 18. Submission hygiene: syntax-gate + submission-gate hooks
 - [ ] 12. Two-device acoustic field test on real laptops/phones (needs humans
-      in a room — scheduled)
+      in a room — scheduled; field-tester agent owns the matrix)
 - [ ] 13. Tune threshold/AGC behavior from field-test findings
 - [ ] 14. Near-ultrasonic "whisper mode" behind a capability probe
 - [ ] 15. AudioWorklet migration if ScriptProcessor jank appears

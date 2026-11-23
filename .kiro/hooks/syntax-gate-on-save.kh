@@ -1,0 +1,16 @@
+{
+  "enabled": true,
+  "name": "syntax-gate-on-save",
+  "version": "1",
+  "trigger": {
+    "type": "fileEdited",
+    "filePatterns": ["js/*.js"]
+  },
+  "actions": [
+    {
+      "type": "task",
+      "command": "for f in js/*.js; do node --check \"$f\" || exit 1; done",
+      "description": "Catch syntax breaks the instant a file is saved — before tests even run. Runs node --check across every module in js/."
+    }
+  ]
+}

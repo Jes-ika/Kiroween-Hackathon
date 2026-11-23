@@ -1,0 +1,20 @@
+{
+  "enabled": true,
+  "name": "submission-gate",
+  "version": "1",
+  "trigger": {
+    "type": "userTriggered"
+  },
+  "actions": [
+    {
+      "type": "task",
+      "command": "node --test \"tests/*.test.js\"",
+      "description": "Run before every push and before touching the Devpost form: all 14 property-based tests must be green."
+    },
+    {
+      "type": "task",
+      "command": "for f in js/*.js; do node --check \"$f\" || exit 1; done && test -f LICENSE && test -d .kiro/specs && test -d .kiro/hooks && test -d .kiro/steering && echo 'GATE PASS: tests green, syntax clean, LICENSE present, .kiro artifacts intact'",
+      "description": "Kiroween hard-gate audit: LICENSE at root and .kiro (specs/hooks/steering) present — a missing artifact or gitignored .kiro can disqualify the submission. Run this hook manually from the Kiro UI before each push."
+    }
+  ]
+}

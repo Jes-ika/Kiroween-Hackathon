@@ -33,6 +33,10 @@ export class GhostAudio {
     // master -> [speakers gate -> destination] and -> [séance loop stream]
     this.master = this.ctx.createGain();
     this.master.gain.value = 1;
+    // analyser tap: feeds the LIVE WIRE oscilloscope (pure observation, no routing)
+    this.analyser = this.ctx.createAnalyser();
+    this.analyser.fftSize = 2048;
+    this.master.connect(this.analyser);
     this.outGain = this.ctx.createGain();
     this.outGain.gain.value = this.speakersOn ? 1 : 0;
     this.master.connect(this.outGain);

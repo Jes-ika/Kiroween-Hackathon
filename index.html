@@ -3,7 +3,10 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Ghostwire resurrects the 1962 acoustic modem as a browser-based, network-free messaging system for disaster zones. Text travels as sound, device to device. No servers. No internet.">
+<meta name="theme-color" content="#050b07">
 <title>GHOSTWIRE — séance protocol for dead zones</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>👻</text></svg>">
 <link rel="stylesheet" href="styles.css">
 </head>
 <body>
@@ -21,7 +24,10 @@
   Text rides 1200&nbsp;Hz and 2200&nbsp;Hz tones from speaker to speaker,
   device to device, exactly like a 1962 Bell modem. No network. No servers.
   No permission asked.</p>
-  <button id="start-btn">BEGIN THE SÉANCE</button>
+  <div class="btns">
+    <button id="start-btn">BEGIN THE SÉANCE</button>
+    <button id="guided-btn" class="ghostly">GUIDED SÉANCE · 30s AUTO-DEMO</button>
+  </div>
   <p class="hint">uses your speakers (and mic, if you open one). nothing leaves the room.</p>
 </div>
 
@@ -66,6 +72,11 @@
       </div>
 
       <div class="panel">
+        <label>LIVE WIRE — WHAT THE MODEM HEARS</label>
+        <canvas id="scope" aria-label="live oscilloscope of the acoustic signal"></canvas>
+      </div>
+
+      <div class="panel">
         <label>DEVICES</label>
         <div class="toggles">
           <label class="toggle"><input type="checkbox" id="spk" checked><span>speak out loud</span></label>
@@ -79,6 +90,7 @@
       <div class="panel">
         <label>RITUALS</label>
         <button id="selftest" class="wide">RUN SELF-TEST</button>
+        <button id="guided2" class="wide ghostly">GUIDED SÉANCE (30s TOUR)</button>
         <div id="stats" class="stats"></div>
       </div>
     </aside>

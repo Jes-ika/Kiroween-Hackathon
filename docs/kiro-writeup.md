@@ -43,13 +43,20 @@ the design doc first.
 
 ## Agent hooks
 
+Four hooks, each tied to a real failure mode we hit or feared:
+
 - `codec-tests-on-save.kh` — any edit to `js/codec.js`, `js/protocol.js` or
   tests re-runs the full property suite. Signal math is the one place where a
   silent regression equals lying to disaster survivors; the hook makes red
   tests impossible to miss.
+- `syntax-gate-on-save.kh` — `node --check` across every js module on save;
+  catches syntax breaks before tests even run.
+- `submission-gate.kh` (manual trigger) — the pre-push ritual: PBT suite +
+  syntax sweep + verifies LICENSE and `.kiro/specs|hooks|steering` exist.
+  A missing artifact or gitignored `.kiro` can disqualify the submission;
+  the gate makes that failure impossible to ship.
 - `kiro-dir-guard.kh` — audits `.gitignore` on every change and asks the agent
-  to verify `/.kiro` isn't ignored. Kiroween rules say a gitignored `.kiro`
-  can disqualify the submission; we automated the paranoia.
+  to verify `/.kiro` isn't ignored.
 
 ## Custom agents
 
@@ -57,6 +64,9 @@ the design doc first.
   house rules: purity of codec.js (Node-runnable), seeded randomness only,
   "instrument the pipeline before theorizing." Used for all codec work;
   the debug-then-fix loop for the clock drift bug followed its discipline.
+- `field-tester` (`.kiro/agents/field-tester.md`) — owns the real-air test
+  matrix (device/distance/noise), enforces "no tuning from a single anecdote,"
+  and converts sessions into spec tasks.
 
 ## Steering
 
@@ -68,15 +78,24 @@ the design doc first.
 - `structure.md` defines where new code goes and keeps envelope keys
   single-letter because they ride the air.
 
-## MCP / Powers / Crew (planned next)
+## MCP
 
-- MCP: filesystem + GitHub MCP for repo hygiene during the crunch; a
-  web-search MCP for prior-art checks (quiet.js, Meshtastic, goTenna) that
-  shaped our differentiation claims.
-- Powers: testing/docs powers for the final week polish.
-- Kiro Crew: a `triage-officer` crew app that watches the séance log and
-  summarizes received SOS traffic is planned as the Best-Kiro-Crew-App add-on
-  if time allows.
+- `.kiro/settings/mcp.json` configures the GitHub MCP server
+  (`@modelcontextprotocol/server-github`, token via `GITHUB_PERSONAL_ACCESS_TOKEN`
+  env var — no secrets in the repo). Enabled it is used for repo hygiene during
+  the crunch: release pushes, Pages/Devpost URL checks, issue tracking for
+  field-test findings.
+
+## Multi-surface evidence checklist (what we ran, where)
+
+- [x] Kiro IDE — spec authoring (EARS requirements → design → tasks) and all
+      `.kiro` artifacts; hooks fire on save inside the IDE.
+- [x] Kiro CLI — test runs (`node --test`) and the submission-gate ritual
+      before pushes.
+- [ ] Kiro Web — research sessions (prior art: quiet.js, Meshtastic, goTenna,
+      disaster outage reports) — capture transcript before submission.
+- [ ] Kiro Crew — `triage-officer` crew app (watches the séance log,
+      summarizes received SOS traffic) — stretch goal for Best Kiro Crew App.
 
 ## What we'd tell a past self
 

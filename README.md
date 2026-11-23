@@ -38,6 +38,9 @@ again *should* feel supernatural.
 
 ## Run it
 
+**Or skip the clone:** the app is live at
+**https://jes-ika.github.io/Kiroween-Hackathon/** (GitHub Pages, HTTPS).
+
 ```bash
 # any static server works (ES modules need http://, not file://)
 npx serve .
@@ -45,14 +48,18 @@ npx serve .
 python -m http.server 5173
 ```
 
-Open http://localhost:5173, press **BEGIN THE SÉANCE**, then:
+Open it and press **BEGIN THE SÉANCE** — or **GUIDED SÉANCE**, a narrated
+30-second auto-demo. Then:
 
 1. **RUN SELF-TEST** — proves the full encode→decode path in pure math.
-2. Type a whisper and **SEND** — with the *séance loop* on, the page speaks
+2. Watch the **LIVE WIRE** oscilloscope — the actual FSK waveform as it
+   speaks and listens.
+3. Type a whisper and **SEND** — with the *séance loop* on, the page speaks
    the FSK burst aloud and decodes it live through the Web Audio graph.
-3. **Two-device séance**: open Ghostwire on two devices, check *speak out
+4. **Two-device séance**: open Ghostwire on two devices, check *speak out
    loud* on one and *open the mic* on the other. Hold them close. The
-   message travels through the AIR.
+   message travels through the AIR. (Mic needs HTTPS or localhost — the
+   séance loop works everywhere.)
 
 ### Tests (Node ≥ 18, zero dependencies)
 

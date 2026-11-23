@@ -1,0 +1,261 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>GHOSTWIRE — modem diagnostics</title>
+<style>
+  body { background: #050b07; color: #86ffb9; font-family: Consolas, monospace; padding: 16px; }
+  button { background: transparent; border: 1px solid #1d4030; color: #86ffb9; padding: 8px 16px; cursor: pointer; margin-bottom: 12px; }
+  pre { white-space: pre-wrap; }
+</style>
+<button id="go">RUN DIAGNOSTIC</button>
+<pre id="out">idle</pre>
+<script type="module">
+import { encodePackets, decodeBurst, Decoder, DEFAULTS } from './js/codec.js';
+import { envelope, textToPayload, payloadToText, crc16, GW1 } from './js/protocol.js';
+
+const out = (...a) => {
+  document.getElementById('out').textContent += a.map(String).join(' ') + '\n';
+};
+document.getElementById('out').textContent = '';
+
+document.getElementById('go').onclick = async () => {
+  document.getElementById('out').textContent = '';
+  const ctx = new (window.AudioContext || window.webkitAudioContext)();
+  const sr = ctx.sampleRate;
+  out('ctx.sampleRate =', sr);
+
+  // exact same graph as GhostAudio: master -> tap -> ScriptProcessor
+  const master = ctx.createGain();
+  const tap = ctx.createGain();
+  const proc = ctx.createScriptProcessor(4096, 1, 1);
+  const mute = ctx.createGain(); mute.gain.value = 0;
+  proc.connect(mute); mute.connect(ctx.destination);
+  master.connect(tap); tap.connect(proc);
+
+  const gotPackets = [];
+  const dec = new Decoder({}, sr, (pkt) => gotPackets.push(pkt.length));
+  let chunks = [];
+  proc.onaudioprocess = (e) => {
+    const ch = e.inputBuffer.getChannelData(0);
+    dec.feed(ch);
+    chunks.push(Float32Array.from(ch));
+  };
+
+  await ctx.resume();
+  out('ctx.state =', ctx.state);
+
+  // 1) pure round-trip (Node-test equivalent)
+  const payload = textToPayload(envelope('DEBUG', 'ALL', 2, 'i am safe', Math.floor(Date.now() / 1000)));
+  const samples = encodePackets([payload], {}, sr);
+  const pure = decodeBurst(samples, {}, sr);
+  out('1) pure round-trip frames:', pure.length);
+
+  // 2) real-time path: play through the graph, capture what proc receives
+  const buf = ctx.createBuffer(1, samples.length, sr);
+  buf.copyToChannel(samples, 0);
+  const src = ctx.createBufferSource();
+  src.buffer = buf;
+  src.connect(master);
+  chunks = [];
+  src.start(ctx.currentTime + 0.05);
+  await new Promise((r) => setTimeout(r, (samples.length / sr) * 1000 + 1500));
+
+  const merged = merge(chunks);
+  out('2) realtime: chunks =', chunks.length, '| merged samples =', merged.length);
+  out('   decoder stats =', JSON.stringify(dec.stats), '| live packets =', gotPackets.length);
+  out('   merged rms =', rms(merged).toFixed(5));
+
+  // 3) slice the burst region and decode it directly
+  const region = burstRegion(merged);
+  out('3) burst region =', region.start, '..', region.end, '(len', region.end - region.start + ')');
+  const seg = merged.slice(region.start, region.end);
+  out('   seg rms =', rms(seg).toFixed(5));
+  const frames = decodeBurst(seg, {}, sr);
+  out('   decodeBurst(seg) frames =', frames.length);
+
+  if (!frames.length) pipelineDiag(seg, sr, payload);
+  if (gotPackets.length) out('   live packet text =', payloadToText(gotPackets[0]).slice(0, 60));
+
+  // 4) sample-level truth: align capture against the original buffer and diff
+  const align = findOffset(merged, samples);
+  out('4) off0 =', align.off0, '(merged index of samples[0])  scale =', align.scale.toFixed(4), 'residual rms =', align.residual.toFixed(6));
+  const aligned = merged.slice(align.off0 - 1600, align.off0 + samples.length + 1600);
+  const alignedFrames = decodeBurst(aligned, {}, sr);
+  out('   decodeBurst(exact-aligned slice) frames =', alignedFrames.length);
+  // first divergent sample
+  let firstDiff = -1;
+  for (let i = 0; i < samples.length; i++) {
+    const idx = align.off0 + i;
+    if (idx < 0 || idx >= merged.length) break;
+    const a = merged[idx];
+    const b = align.scale * samples[i];
+    if (Math.abs(a - b) > 0.05) { firstDiff = i; break; }
+  }
+  out('   first big sample diff at burst sample =', firstDiff, '(burst is', samples.length, 'samples)');
+};
+
+function findOffset(merged, samples) {
+  // cross-correlate a signal-region window of the ORIGINAL against the capture
+  const win0 = 2000;
+  const offInSamples = 1600; // inside the burst body (past lead silence + fade)
+  const seg0 = samples.slice(offInSamples, offInSamples + win0);
+  let bestOff = 0, bestScore = -Infinity;
+  for (let off = -4000; off <= 9000; off += 1) {
+    let score = 0, bad = false;
+    for (let i = 0; i < win0; i += 4) {
+      const v = merged[off + offInSamples + i];
+      if (v === undefined) { bad = true; break; }
+      score += seg0[i] * v;
+    }
+    if (!bad && score > bestScore) { bestScore = score; bestOff = off; }
+  }
+  // off0 = merged index where samples[0] lands
+  const off0 = bestOff;
+  // scale: least squares capture ≈ scale * original over the window
+  let num = 0, den = 0;
+  for (let i = 0; i < win0; i += 4) {
+    const o = merged[bestOff + offInSamples + i];
+    num += seg0[i] * o;
+    den += o * o;
+  }
+  const scale = den > 0 ? num / den : 1;
+  let residual = 0, count = 0;
+  for (let i = 0; i < win0; i += 4) {
+    const d = seg0[i] - scale * merged[bestOff + offInSamples + i];
+    residual += d * d;
+    count++;
+  }
+  return { off0, scale, residual: Math.sqrt(residual / count) };
+}
+
+function merge(cs) {
+  const n = cs.reduce((a, c) => a + c.length, 0);
+  const m = new Float32Array(n);
+  let o = 0;
+  for (const c of cs) { m.set(c, o); o += c.length; }
+  return m;
+}
+function rms(a) {
+  let e = 0;
+  for (const v of a) e += v * v;
+  return Math.sqrt(e / a.length);
+}
+function burstRegion(a) {
+  let s = -1, e = -1;
+  for (let i = 0; i < a.length; i++) {
+    if (Math.abs(a[i]) > 0.05) { if (s < 0) s = i; e = i; }
+  }
+  if (s < 0) return { start: 0, end: 0 };
+  return { start: Math.max(0, s - 1000), end: Math.min(a.length, e + 1000) };
+}
+
+// Replicate decodeBurst stage by stage with visibility.
+function pipelineDiag(seg, sr, expectedPayload) {
+  const p = { ...DEFAULTS };
+  const win = Math.round(sr / p.baud);
+  const hop = Math.max(1, Math.floor(win / 40));
+  const n = seg.length;
+  out('--- pipeline diag: win =', win, 'hop =', hop, 'n =', n);
+
+  let mean = 0;
+  for (const v of seg) mean += v;
+  mean /= n;
+  let energy = 0;
+  const s = new Float32Array(n);
+  for (let i = 0; i < n; i++) { const v = seg[i] - mean; s[i] = v; energy += v * v; }
+  const gn = 1 / Math.sqrt(energy / n);
+  for (let i = 0; i < n; i++) s[i] *= gn;
+
+  const cM = 2 * Math.cos((2 * Math.PI * p.markFreq) / sr);
+  const cS = 2 * Math.cos((2 * Math.PI * p.spaceFreq) / sr);
+  const gd = (t) => {
+    let s1m = 0, s2m = 0, s1s = 0, s2s = 0;
+    for (let i = t; i < t + win; i++) {
+      const x = s[i];
+      const tm = s1m; s1m = x + cM * s1m - s2m; s2m = tm;
+      const ts = s1s; s1s = x + cS * s1s - s2s; s2s = ts;
+    }
+    return (s1m * s1m + s2m * s2m - cM * s1m * s2m) - (s1s * s1s + s2s * s2s - cS * s1s * s2s);
+  };
+
+  const last = n - win;
+  const gLen = Math.max(1, Math.floor(last / hop));
+  const d = new Float32Array(gLen);
+  for (let g = 0; g < gLen; g++) d[g] = gd(g * hop);
+
+  const crossings = [];
+  for (let g = 1; g < gLen; g++) {
+    const a = d[g - 1], b = d[g];
+    if (!((a < 0 && b >= 0) || (a > 0 && b <= 0))) continue;
+    const den = a - b;
+    let frac = den !== 0 ? a / den : 0.5;
+    if (!(frac >= 0 && frac <= 1)) frac = 0.5;
+    crossings.push((g - 1 + frac) * hop);
+  }
+  out('   crossings =', crossings.length);
+
+  let bestChain = [], chain = [];
+  for (let i = 1; i < crossings.length; i++) {
+    const iv = crossings[i] - crossings[i - 1];
+    if (iv > win * 0.8 && iv < win * 1.2) {
+      if (chain.length === 0) chain.push(crossings[i - 1]);
+      chain.push(crossings[i]);
+    } else {
+      if (chain.length > bestChain.length) bestChain = chain;
+      chain = [];
+    }
+  }
+  if (chain.length > bestChain.length) bestChain = chain;
+  out('   longest chain =', bestChain.length);
+
+  let bl = win;
+  if (bestChain.length >= 8) {
+    const m = bestChain.length;
+    let sx = 0, sy = 0, sxx = 0, sxy = 0;
+    for (let i = 0; i < m; i++) { sx += i; sy += bestChain[i]; sxx += i * i; sxy += i * bestChain[i]; }
+    const den = m * sxx - sx * sx;
+    if (den !== 0) bl = (m * sxy - sx * sy) / den;
+  }
+  out('   bl estimate =', bl.toFixed(2), '(true', Math.round(sr / p.baud) + ')');
+
+  const nBits = Math.floor((last - win) / bl) - 1;
+  out('   nBits =', nBits, '(expected ~' + Math.ceil((n / bl)) + ')');
+
+  // where do sync patterns appear in a bit stream decoded at bl?
+  const phiMax = Math.max(1, Math.round(bl));
+  let bestPhi = 0, bestScore = -1;
+  for (let phi = 0; phi < phiMax; phi += 2) {
+    let score = 0;
+    for (let k = 0; k < nBits; k++) {
+      const g = Math.min(gLen - 1, Math.round((phi + Math.round(k * bl)) / hop));
+      score += Math.abs(d[g]);
+    }
+    if (score > bestScore) { bestScore = score; bestPhi = phi; }
+  }
+  const bits = new Uint8Array(nBits);
+  for (let k = 0; k < nBits; k++) bits[k] = gd(bestPhi + Math.round(k * bl)) > 0 ? 1 : 0;
+
+  const byte = (off) => {
+    let v = 0;
+    for (let j = 0; j < 8; j++) v |= bits[off + j] << j;
+    return v;
+  };
+  const hits = [];
+  for (let i = 0; i + 16 <= nBits; i++) {
+    if (byte(i) === GW1.sync) hits.push(i);
+  }
+  out('   sync hits =', hits.length, 'at', hits.slice(0, 8).join(','), '(first expected ~' + (6 * 8) + ')');
+
+  const expectedText = new TextDecoder().decode(expectedPayload);
+  for (const i of hits.slice(0, 5)) {
+    const len = byte(i + 8);
+    if (len > GW1.maxPayload) { out('   sync@' + i, 'len invalid:', len); continue; }
+    const raw = [];
+    for (let b = 0; b < 1 + len + 2; b++) raw.push(byte(i + 8 + b * 8));
+    const calc = crc16(new Uint8Array(raw.slice(0, 1 + len)));
+    const got = (raw[1 + len] << 8) | raw[2 + len];
+    const txt = new TextDecoder().decode(new Uint8Array(raw.slice(1, 1 + len)));
+    out('   sync@' + i, 'len=' + len, 'crc', got === calc ? 'OK' : 'BAD', 'text="' + txt.slice(0, 40) + '"');
+  }
+  out('   expected text = "' + expectedText + '"');
+}
+</script>

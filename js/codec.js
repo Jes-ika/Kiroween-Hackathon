@@ -211,7 +211,13 @@ export function decodeBurst(samples, opts = {}, sampleRate = 48000) {
 
   // --- CRC-gated retry ladder: escalate bit-length correction until a valid
   // --- frame escapes. Wrong guesses fail CRC cleanly, so this is safe.
-  const relOffsets = [0, 0.004, -0.004, 0.008, -0.008, 0.015, -0.015, 0.025, -0.025, 0.04, -0.04, 0.06, -0.06];
+  // Fine steps first: the least-squares estimate is usually within ±0.5% and
+  // a 0.05% step keeps late-frame drift under half a cell even at 600+ bits.
+  const relOffsets = [
+    0, 0.0005, -0.0005, 0.001, -0.001, 0.0015, -0.0015, 0.002, -0.002,
+    0.003, -0.003, 0.004, -0.004, 0.005, -0.005, 0.0075, -0.0075,
+    0.01, -0.01, 0.015, -0.015, 0.02, -0.02,
+  ];
   for (const ro of relOffsets) {
     const frames = extractFrames(s, win, bl * (1 + ro), p, cM, cS, d, gLen, hop);
     if (frames.length > 0) return frames;
@@ -292,6 +298,7 @@ export class Decoder {
     this.silence = 0;
     this.level = 0; // latest chunk RMS, for the UI carrier meter
     this.stats = { bursts: 0, packets: 0 };
+    this.bufSamples = 0;
     this._maxBuf = Math.round(this.p.maxBurstSec * sampleRate);
     this._burstGapSamples = Math.round((this.p.burstGapMs / 1000) * sampleRate);
   }
@@ -301,22 +308,30 @@ export class Decoder {
     for (let i = 0; i < chunk.length; i++) e += chunk[i] * chunk[i];
     const rms = Math.sqrt(e / Math.max(1, chunk.length));
     this.level = rms;
+    // COPY the chunk: ScriptProcessorNode's inputBuffer is only valid during
+    // the callback — the underlying memory is reused for the next event, so
+    // retained views silently mutate into the latest audio. This cost us a
+    // whole debugging evening in the séance; do not "optimize" it away.
+    const snapshot = Float32Array.from(chunk);
     if (rms >= this.p.threshold) {
       this.inBurst = true;
       this.silence = 0;
-      this.buf.push(chunk);
+      this.buf.push(snapshot);
+      this.bufSamples += snapshot.length;
     } else if (this.inBurst) {
-      this.silence += chunk.length;
-      this.buf.push(chunk);
+      this.silence += snapshot.length;
+      this.buf.push(snapshot);
+      this.bufSamples += snapshot.length;
       if (this.silence >= this._burstGapSamples) this.endBurst();
     }
-    if (this.buf.length >= this._maxBuf) this.endBurst();
+    if (this.bufSamples >= this._maxBuf) this.endBurst();
   }
 
   endBurst() {
     if (!this.inBurst) return;
     this.inBurst = false;
     this.silence = 0;
+    this.bufSamples = 0;
     const merged = new Float32Array(this.buf.reduce((a, c) => a + c.length, 0));
     let o = 0;
     for (const c of this.buf) {

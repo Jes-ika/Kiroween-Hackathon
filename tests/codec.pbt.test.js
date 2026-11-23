@@ -170,6 +170,25 @@ test('settings honor overrides (baud sweeps still round-trip)', () => {
   }
 });
 
+test('PBT: bursts embedded in a realtime capture layout decode (padding, chunk offsets)', () => {
+  // Regression for the live-browser capture path: the burst starts at an
+  // arbitrary offset and sits inside leading/trailing digital silence, the
+  // way ScriptProcessorNode chunks hand it to us.
+  const rng = mulberry32(0xca75dead);
+  const sr = 48000;
+  for (let i = 0; i < 12; i++) {
+    const payload = randomPayload(rng);
+    const samples = encodePackets([payload], {}, sr);
+    const leadPad = Math.floor(rng() * 6000); // up to 125ms of pre-roll
+    const trailPad = Math.floor(rng() * 9000); // up to ~187ms of tail
+    const padded = new Float32Array(leadPad + samples.length + trailPad);
+    padded.set(samples, leadPad);
+    const decoded = decodeBurst(padded, {}, sr);
+    assert.equal(decoded.length, 1, `case ${i}: padded capture lost the frame`);
+    assert.deepEqual([...decoded[0]], [...payload], `case ${i}: padded capture mangled the payload`);
+  }
+});
+
 test('DEFAULTS expose the Bell-202-honoring signal plan', () => {
   assert.equal(DEFAULTS.markFreq, 1200);
   assert.equal(DEFAULTS.spaceFreq, 2200);

@@ -10,6 +10,7 @@
 | amplitude   | 0.8            | headroom for fade-in/out, avoids clipping |
 | preamble    | 0x55 ×6        | alternating bits = clock railroad tracks |
 | framing     | [0x7E][LEN][payload][CRC16] | hunt-and-verify; resync per byte |
+| maxPayload  | 128 B           | JSON envelope ~56 B → ~72 chars of text on air |
 
 ## Modulation (encodePackets)
 
@@ -62,7 +63,7 @@ separated by the encoder's 60 ms gaps.
 | Property                          | Test |
 |-----------------------------------|------|
 | round-trip, random payloads ×2 SRs| `codec.pbt.test.js` |
-| full-size 96 B payloads           | idem |
+| full-size 128 B payloads           | idem |
 | noise to 10 dB SNR                | idem |
 | 48k↔44.1k clock mismatch          | idem |
 | ×3 relay flood via Decoder        | idem |

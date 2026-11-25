@@ -26,8 +26,13 @@ and produces prioritized incident briefings for responders.
 
 ## Design
 
-- `tools/triage.mjs` — deterministic parser/briefing tool (stdin, file arg,
-  `--json`). The agent orchestrates it and adds judgment on top: repeat
+- `js/triage-core.js` — the pure briefing engine, imported by THREE
+  consumers so the loop is continuous: the live console (TRIAGE strip
+  updates the moment a packet decodes), the crew CLI (`tools/triage.mjs`,
+  stdin/file/`--json`), and the tests.
+- The console's EXPORT TRANSCRIPT button hands the raw log to the officer —
+  acoustic decode → live triage → briefing, no offline bolt-on.
+- The agent orchestrates the tool and adds judgment on top: repeat
   patterns, silences, follow-up priorities. The tool never invents; the
   agent never fabricates.
 - Priority model: MEDICAL 4 > LOCATION 3 > WATER 2 > CHECK-IN 1 > other 0.

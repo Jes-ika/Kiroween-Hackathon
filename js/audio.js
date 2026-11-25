@@ -22,6 +22,7 @@ export class GhostAudio {
     this.speakersOn = true;
     this.seanceOn = true;
     this.micOn = false;
+    this.volume = 0.7; // speaker loudness; the séance tap is pre-volume and unaffected
   }
 
   // Must be called from a user gesture (browser autoplay policy).
@@ -38,7 +39,7 @@ export class GhostAudio {
     this.analyser.fftSize = 2048;
     this.master.connect(this.analyser);
     this.outGain = this.ctx.createGain();
-    this.outGain.gain.value = this.speakersOn ? 1 : 0;
+    this.outGain.gain.value = this.speakersOn ? this.volume : 0;
     this.master.connect(this.outGain);
     this.outGain.connect(this.ctx.destination);
 
@@ -64,7 +65,12 @@ export class GhostAudio {
 
   setSpeakers(on) {
     this.speakersOn = on;
-    if (this.outGain) this.outGain.gain.value = on ? 1 : 0;
+    if (this.outGain) this.outGain.gain.value = on ? this.volume : 0;
+  }
+
+  setVolume(v) {
+    this.volume = v;
+    if (this.outGain && this.speakersOn) this.outGain.gain.value = v;
   }
 
   setSeance(on) {

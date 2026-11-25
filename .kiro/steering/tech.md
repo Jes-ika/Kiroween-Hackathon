@@ -15,7 +15,7 @@
 - 600 baud default; codec is parameterized, PBT sweeps 300–600.
 - Framing: `[0x55 ×6][0x7E][LEN][payload][CRC16-CCITT]`, LSB-first bits.
 - CRC-16/CCITT-FALSE (poly 0x1021, init 0xFFFF) over LEN+payload.
-- Payload ≤ 96 bytes: a JSON envelope `{f, t, ttl, m, ts}`.
+- Payload ≤ 128 bytes: a JSON envelope `{f, t, ttl, m, ts}`.
 
 ## DSP architecture rules
 

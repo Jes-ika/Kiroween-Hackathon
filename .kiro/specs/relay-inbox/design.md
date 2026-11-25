@@ -1,6 +1,6 @@
 # Design: Relay Inbox
 
-- Envelope: `{f: from, t: to|"ALL", ttl, m: text, ts}` (JSON, ≤96 B on air).
+- Envelope: `{f: from, t: to|"ALL", ttl, m: text, ts}` (JSON, ≤128 B on air).
 - Relay decision: `t !== me && t !== "ALL" && ttl > 0` → rebroadcast
   `{...env, ttl: ttl-1}` after a jittered backoff. Randomization prevents the
   "synchro-ghost" problem where every neighbor re-broadcasts simultaneously

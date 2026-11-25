@@ -12,6 +12,40 @@ it wasn't a unit test that caught it — it was a property-based test written
 against the spec, and the fix (least-squares clock recovery) went back through
 the design doc first.
 
+## Positioning: zero AI in the transport, by design
+
+A cynical judge should hear this clearly: the modem contains **no LLM and no
+probabilistic component whatsoever**. In a crisis, a hallucinated message can
+cost a life, so the transport is pure deterministic DSP behind a CRC-16 gate —
+it can stay silent, but it can never invent text. AI enters exactly one place:
+the **triage chair**, where the crew agent assists human judgment on
+already-verified traffic. That split is an architectural safety decision, and
+the EARS spec for the acoustic protocol forbids rendering unverified frames.
+
+## Development timeline (all within the submission window; see git log)
+
+- **Day 1** — EARS specs for the acoustic protocol + relay inbox written in
+  Kiro BEFORE the decoder existed; protocol layer + CRC known-answer test.
+- **Day 1–2** — encoder, decoder core; PBT caught the median-clock drift bug
+  (long frames died at the CRC); fix went through design.md ("LESSON
+  LEARNED") before the code; retry ladder added.
+- **Day 2** — browser transport + séance console; first real-machine test
+  exposed the séance-loop silence (MediaStream roundtrip) → replaced with a
+  direct in-graph tap.
+- **Day 3** — live-judge evidence: SELF-TEST threw a byte-budget error
+  silently; envelope overhead vs 96-byte wire audited → budget fixed, error
+  surfaced, textarea cap matched to the wire.
+- **Day 3** — localhost pipeline forensics (`debug.html`) uncovered the
+  browser-only ScriptProcessor buffer-aliasing bug (Node tests were green;
+  the browser decoded overwritten silence); fixed with per-chunk snapshots +
+  fine clock ladder + a new regression PBT. Echo decode verified end-to-end
+  on the live site.
+- **Day 4 (post-audit)** — external red-team review: positioned the project
+  as the Last-Gasp Zero-Hop Protocol, added voice control / wake lock /
+  128-byte payloads / live TRIAGE strip / transcript export (continuous
+  modem→officer loop), restructured the video around a two-phone
+  airplane-mode cold open.
+
 ## Spec-driven development
 
 - `.kiro/specs/acoustic-protocol/` — 9 EARS requirements ("WHEN noise reduces

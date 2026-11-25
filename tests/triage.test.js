@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { triage } from '../tools/triage.mjs';
+import { triage } from '../js/triage-core.js';
 
 const sample = readFileSync(new URL('../tools/sample-transcript.txt', import.meta.url), 'utf8');
 

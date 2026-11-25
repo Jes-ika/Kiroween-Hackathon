@@ -54,7 +54,7 @@
 
       <div class="panel">
         <label>WHISPER INTO THE VOID</label>
-        <textarea id="msg" maxlength="36" rows="3" placeholder="i am safe. towers are down."></textarea>
+        <textarea id="msg" maxlength="72" rows="3" placeholder="i am safe. towers are down. third floor, west wing."></textarea>
         <div class="row">
           <select id="target"></select>
           <button id="send" class="primary">SEND</button>
@@ -82,7 +82,10 @@
           <label class="toggle"><input type="checkbox" id="spk" checked><span>speak out loud</span></label>
           <label class="toggle"><input type="checkbox" id="loop" checked><span>séance loop (in-page)</span></label>
           <label class="toggle"><input type="checkbox" id="mic"><span>open the mic (real air)</span></label>
+          <label class="toggle"><input type="checkbox" id="wake"><span>keep the radio awake</span></label>
         </div>
+        <label class="meter-label">VOICE — <span id="vol-label">70%</span> (decode unaffected)</label>
+        <input type="range" id="vol" min="0.1" max="1" step="0.05" value="0.7">
         <label class="meter-label">CARRIER</label>
         <div class="meter"><div id="meter-fill"></div></div>
       </div>
@@ -91,6 +94,8 @@
         <label>RITUALS</label>
         <button id="selftest" class="wide">RUN SELF-TEST</button>
         <button id="guided2" class="wide ghostly">GUIDED SÉANCE (30s TOUR)</button>
+        <button id="exportlog" class="wide ghostly">EXPORT TRANSCRIPT → TRIAGE</button>
+        <div id="triage" class="triage">TRIAGE — MED 0 · LOC 0 · H2O 0 · OK 0</div>
         <div id="stats" class="stats"></div>
       </div>
     </aside>

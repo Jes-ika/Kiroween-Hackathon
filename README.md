@@ -6,6 +6,21 @@
 (Bell 103/202 heritage) and rebirthed it as a zero-install, zero-server,
 disaster-resilient messaging network that runs in any browser tab.
 
+## The design posture: the Last-Gasp Zero-Hop Protocol
+
+Ghostwire makes **no claim** to replace satellite SOS, FM radio, or
+professional emergency infrastructure. It is the **last-gasp layer** — for
+the gap when towers are down, Bluetooth won't pair, and the people who matter
+are 10 meters away, through a wall, down a stairwell, or across a shelter —
+places where sound already carries and nothing else does.
+
+And it is honest by construction: **there is zero LLM in the transport
+layer.** The modem is pure deterministic DSP with a CRC-16 gate. In a crisis,
+a hallucinated message can cost a life — so the AI sits exclusively in the
+triage chair ([triage-officer](#the-radio-room-triage-officer-kiro-crew-app)),
+where it assists human judgment on already-verified traffic. The wire never
+lies, and the radio room explains.
+
 ## The problem
 
 Disasters kill networks before anything else. Hurricane Maria left ~90% of
@@ -107,9 +122,31 @@ cat transcript.txt | node tools/triage.mjs --json          # for automation
 Deterministic tool, judgment on top: the crew agent orchestrates the briefing
 and adds what code cannot — repeat patterns, silences, follow-up priorities.
 
+**One continuous loop, not a bolt-on:** the console's TRIAGE strip runs the
+*same* briefing engine (`js/triage-core.js`) live on the decoded transcript —
+the moment the modem hears `NEED MEDICAL`, the radio room's board goes red.
+**EXPORT TRANSCRIPT → TRIAGE** hands the raw log to the officer in one click.
+
 The codec is deliberately browser-free — the exact math that flies through
 your room is the math the test suite hammers with noise, clock skew and
 corruption.
+
+## Honest limitations
+
+We would rather lose a point to honesty than win one on a claim:
+
+- **Range is room-scale** (~10–30 m line-of-sound). Extending reach is the
+  relay mesh's job, hop by hop — not an antenna fantasy.
+- **Noise floors matter.** Verified decoding down to 10 dB SNR (property
+  tests); below that, frames fail their CRC and are dropped — silence over
+  garbage, always. SOS presets broadcast ×3 to fight exactly this.
+- **Mobile OSes throttle background audio.** A disaster radio that dies when
+  the screen sleeps is a liability, so Ghostwire offers a Screen Wake Lock
+  ("keep the radio awake") and is designed to be an *attended* radio, not a
+  background daemon.
+- **Shared air is polite air**: the voice control shapes speaker output
+  (decode is pre-volume), relays back off with jitter, and triage
+  prioritizes what gets acted on first.
 
 ## How Kiro built this
 

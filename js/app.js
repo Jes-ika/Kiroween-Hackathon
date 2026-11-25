@@ -1,6 +1,7 @@
 // Ghostwire — séance console (DOM wiring, envelope logic, relay inbox).
 import { GhostAudio } from './audio.js';
 import { encodePackets, decodeBurst } from './codec.js';
+import { triage } from './triage-core.js';
 import {
   envelope, textToPayload, payloadToText, fnv1a, randomCallsign, GHOST_NAMES, GW1,
 } from './protocol.js';
@@ -27,6 +28,24 @@ function addLog(type, text) {
 function updateStats() {
   $('stats').textContent =
     `sent ${state.stats.sent} · heard ${state.stats.heard} · echoes ${state.stats.dupes} · carried ${state.stats.relayed}`;
+}
+
+// The triage strip: the SAME briefing engine the triage-officer agent uses,
+// running live on the console transcript. The modem decodes, the radio room
+// already knows what matters — one continuous loop, no offline bolt-on.
+function updateTriage() {
+  const { briefing } = triage(log.innerText);
+  const c = briefing.counts;
+  const parts = [
+    `MED ${c.MEDICAL || 0}`,
+    `LOC ${c.LOCATION || 0}`,
+    `H2O ${c.WATER || 0}`,
+    `OK ${c['CHECK-IN'] || 0}`,
+  ];
+  if (briefing.unresolved) parts.push(`${briefing.unresolved} lost`);
+  const el = $('triage');
+  el.textContent = `TRIAGE — ${parts.join(' · ')}`;
+  el.classList.toggle('alert', (c.MEDICAL || 0) > 0 || (c.LOCATION || 0) > 0);
 }
 
 function lamp(cls, ms = 700) {
@@ -98,6 +117,7 @@ function handlePacket(bytes) {
     addLog('sys', `a whisper meant for ${esc(env.t)} faded here — no hops left`);
   }
   updateStats();
+  updateTriage();
 }
 
 const SOS_SET = new Set(['I AM SAFE', 'NEED MEDICAL', 'NEED WATER', 'COME TO ME']);
@@ -116,6 +136,7 @@ function send(text, { to = 'ALL', repeat = 1 } = {}) {
   lamp('tx', Math.max(700, dur * 1000));
   addLog('sent', `<b>«${esc(state.me)}»</b> → ${to === 'ALL' ? 'ALL' : esc(to)}: ${esc(text)}${repeat > 1 ? ` (×${repeat})` : ''}`);
   updateStats();
+  updateTriage();
 }
 
 // ---- audio engine ----------------------------------------------------------
@@ -188,7 +209,7 @@ requestAnimationFrame(drawScope);
 // ---- self-test (pure DSP round trip, no audio device needed) ---------------
 function runSelfTest() {
   try {
-    // JSON envelope overhead is ~56 bytes; keep the phrase inside the 96B wire
+    // JSON envelope overhead is ~56 bytes; keep the phrase inside the 128B wire
     // budget (ASCII only — multibyte punctuation is a byte-budget assassin).
     const hex = Math.random().toString(36).slice(2, 8).toUpperCase();
     const phrase = `self-test ${hex}: haunted but honest`;
@@ -308,11 +329,74 @@ $('mic').addEventListener('change', async (e) => {
 
 $('selftest').addEventListener('click', runSelfTest);
 
+// ---- radio-room conveniences ------------------------------------------------
+// TX volume shapes ONLY the speaker path (outGain); the séance tap feeds the
+// decoder pre-volume, so turning it down never hurts decode reliability.
+$('vol').addEventListener('input', (e) => {
+  const v = parseFloat(e.target.value);
+  audio.setVolume(v);
+  $('vol-label').textContent = `${Math.round(v * 100)}%`;
+});
+
+// Screen Wake Lock: a disaster radio shouldn't die when the screen sleeps.
+// Browsers kill AudioContext pipelines in backgrounded tabs — the honest
+// posture is an actively-attended radio, and this keeps it that way.
+let wakeLockSentinel = null;
+async function setWakeLock(on) {
+  try {
+    if (!('wakeLock' in navigator)) {
+      $('wake').checked = false;
+      $('wake').disabled = true;
+      return;
+    }
+    if (on) {
+      wakeLockSentinel = await navigator.wakeLock.request('screen');
+      wakeLockSentinel.addEventListener('release', () => { wakeLockSentinel = null; });
+      addLog('sys', 'radio pinned awake — the screen will not sleep while this tab is visible.');
+    } else if (wakeLockSentinel) {
+      await wakeLockSentinel.release();
+      wakeLockSentinel = null;
+    }
+  } catch (err) {
+    $('wake').checked = false;
+    addLog('warn', `wake lock refused: ${err.message}`);
+  }
+}
+$('wake').addEventListener('change', (e) => setWakeLock(e.target.checked));
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible' && $('wake').checked && !wakeLockSentinel) {
+    setWakeLock(true);
+  }
+});
+
+// Transcript export: the bridge from the acoustic network to the radio room —
+// one click hands the raw séance transcript to the triage-officer.
+$('exportlog').addEventListener('click', async () => {
+  const text = log.innerText;
+  try {
+    await navigator.clipboard.writeText(text);
+    addLog('sys', 'transcript copied to clipboard — hand it to the triage-officer (node tools/triage.mjs).');
+  } catch {
+    const blob = new Blob([text], { type: 'text/plain' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `ghostwire-transcript-${Date.now()}.txt`;
+    a.click();
+    URL.revokeObjectURL(a.href);
+    addLog('sys', 'transcript downloaded — hand it to the triage-officer (node tools/triage.mjs).');
+  }
+});
+
 fillCallsignSelect();
 fillTargetSelect();
 updateStats();
+updateTriage();
 if (!micSupported()) {
   $('mic').checked = false;
   $('mic').disabled = true;
+}
+if (!('wakeLock' in navigator)) {
+  $('wake').checked = false;
+  $('wake').disabled = true;
 }
 addLog('sys', 'the console is asleep. press BEGIN THE SÉANCE to wake it.');

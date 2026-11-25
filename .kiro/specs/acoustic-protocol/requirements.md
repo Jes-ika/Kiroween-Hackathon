@@ -31,7 +31,7 @@ hostile noise.
 - WHEN no carrier is present, THE SYSTEM SHALL decode nothing (no
   hallucinations from silence).
 
-- WHEN a payload exceeds 96 bytes, THE SYSTEM SHALL refuse to transmit and
+- WHEN a payload exceeds 128 bytes, THE SYSTEM SHALL refuse to transmit and
   tell the user, instead of silently truncating.
 
 - WHILE the app is open, THE SYSTEM SHALL expose a self-test that proves the

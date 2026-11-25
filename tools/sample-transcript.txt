@@ -1,0 +1,11 @@
+22:13:49 «GHAST» → ALL: i am safe
+22:13:50 an echo repeats (2×) — deduped
+22:13:57 «GHAST» → ALL: I AM SAFE (×3)
+22:14:00 an echo repeats (2×) — deduped
+22:14:00 an echo repeats (3×) — deduped
+22:15:12 «BANSHEE» → ALL: NEED MEDICAL
+22:15:40 «BANSHEE» → ALL: NEED MEDICAL
+22:16:02 «WRAITH» → ALL: NEED WATER
+22:16:30 «PHANTOM» → WRAITH: COME TO ME
+22:16:44 a whisper meant for POLTER faded here — no hops left
+22:17:01 «SPOOK» → ALL: i am safe. towers are down.

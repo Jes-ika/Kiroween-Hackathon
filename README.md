@@ -88,7 +88,24 @@ js/codec.js      PURE DSP (runs in Node tests AND browser):
                  exact bit slicing → sync hunt → CRC gate
 js/audio.js      Web Audio transport: speakers, séance loop, mic
 js/app.js        séance console: relay inbox, SOS presets, self-test
+tools/triage.mjs the triage-officer's instrument: transcript →
+                 prioritized incident briefing (CRITICAL/ELEVATED/STABLE)
 ```
+
+## The radio room: triage-officer (Kiro Crew app)
+
+Receiving SOS traffic is not the same as acting on it. The **triage-officer**
+agent (`.kiro/agents/triage-officer.md`) turns raw séance transcripts into
+prioritized incident briefings — medical floats to CRITICAL, echoes count as
+corroboration, faded whispers become UNRESOLVED follow-ups.
+
+```bash
+node tools/triage.mjs tools/sample-transcript.txt          # human briefing
+cat transcript.txt | node tools/triage.mjs --json          # for automation
+```
+
+Deterministic tool, judgment on top: the crew agent orchestrates the briefing
+and adds what code cannot — repeat patterns, silences, follow-up priorities.
 
 The codec is deliberately browser-free — the exact math that flies through
 your room is the math the test suite hammers with noise, clock skew and
